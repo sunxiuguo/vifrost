@@ -331,6 +331,19 @@ await created.save()          // PUT, since the primary key is now set
 await created.delete()
 ```
 
+Loaded relations declared in `static relations` accept Laravel's snake-case
+serialization: for example, `staff_member` can be read as `staffMember`. Only
+unambiguous declared relation names are aliased; ordinary column names are not
+converted. If a response contains both names, its own canonical key wins for
+both views, including an explicit `null` or `undefined`.
+
+The two names share one value, so assignment and later `save()` responses stay
+consistent. Added aliases are non-enumerable: they do not add keys to the
+serialized payload, and the initially received wire keys remain enumerable.
+A save response that omits a loaded relation leaves its value intact. `save()`
+still sends the model's enumerable attributes, not a dirty-field patch; this does
+not introduce dirty tracking or resolve edits made while a save is in flight.
+
 A model with a composite primary key (see "Composite primary keys" above) declares
 its key columns as a list, and takes the key values in that order:
 

@@ -1,3 +1,4 @@
+import { applyModelAttributes } from './relationAttributes.js'
 import { client, getRegistry, getUnloadedRelationAccess } from './config.js'
 import { guardUnloadedRelations } from './RelationGuard.js'
 import { QueryBuilder } from './QueryBuilder.js'
@@ -41,7 +42,7 @@ export class Model {
   [attributeName: string]: unknown
 
   constructor(attributes: Record<string, unknown> = {}) {
-    Object.assign(this, attributes)
+    applyModelAttributes(this, attributes, (this.constructor as ModelConstructor).relations)
   }
 
   private primaryKeyValue(): string | number {
@@ -148,7 +149,7 @@ export class Model {
     if (mode === 'off' || this.relations.length === 0) {
       return instance
     }
-    const unloadedRelationNames = this.relations.filter((name) => !(name in attributes))
+    const unloadedRelationNames = this.relations.filter((name) => !Object.prototype.hasOwnProperty.call(instance, name))
     const guarded = guardUnloadedRelations(instance, unloadedRelationNames, mode)
     persistedInstances.add(guarded)
     return guarded
@@ -207,7 +208,7 @@ export class Model {
       ? await client().put<Record<string, unknown>>(`${modelConstructor.resource}/${this.primaryKeyValue()}`, attributes)
       : await client().post<Record<string, unknown>>(modelConstructor.resource, attributes)
 
-    Object.assign(this, updatedRow)
+    applyModelAttributes(this, updatedRow, modelConstructor.relations)
     persistedInstances.add(this)
 
     const registry = getRegistry()
